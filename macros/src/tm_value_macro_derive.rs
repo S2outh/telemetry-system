@@ -12,9 +12,8 @@ pub fn impl_macro(ast: syn::DeriveInput) -> TokenStream {
         .map(|(i, f)| {
             let ident = &f.ident;
             quote! {{
-                let field_bytes = self.#ident.to_bytes();
                 let pos = Self::get_pos(#i);
-                bytes[pos..(pos+Self::SIZES[#i])].copy_from_slice(&field_bytes);
+                self.#ident.write(&mut mem[pos..(pos+Self::SIZES[#i])]);
             }}
         });
     let struct_type_parsers = tm_value_struct.fields
@@ -22,20 +21,16 @@ pub fn impl_macro(ast: syn::DeriveInput) -> TokenStream {
         .enumerate()
         .map(|(i, f)| {
             let ident = &f.ident;
-            let ty = &f.ty;
-            quote! {
-                #ident: {
-                    let pos = Self::get_pos(#i);
-                    let field_bytes: [u8; Self::SIZES[#i]] = bytes[pos..(pos+Self::SIZES[#i])].try_into().unwrap();
-                    #ty::from_bytes(field_bytes)
-                }
-            }
+            quote! {{
+                let pos = Self::get_pos(#i);
+                self.#ident.read(&bytes[pos..(pos+Self::SIZES[#i])]);
+            }}
         });
     let struct_types = tm_value_struct.fields.iter().map(|f| &f.ty);
     let struct_len = tm_value_struct.fields.len();
     quote! {
         impl #type_name {
-            const SIZES: [usize; #struct_len] = [#(size_of::<<#struct_types as TMValue>::Bytes>()),*];
+            const SIZES: [usize; #struct_len] = [#(<#struct_types as TMValue>::BYTE_SIZE),*];
             const fn get_pos(index: usize) -> usize {
                 let mut len = 0;
                 let mut i = 0;
@@ -45,22 +40,20 @@ pub fn impl_macro(ast: syn::DeriveInput) -> TokenStream {
                 }
                 len
             }
-            const fn len() -> usize {
-                Self::get_pos(Self::SIZES.len())
+        }
+        impl DynTMValue for #type_name {
+            fn read(&mut self, bytes: &[u8]) {
+                #(#struct_type_parsers)*
+            }
+            fn write(&self, mem: &mut [u8]) {
+                #(#struct_byte_parsers)*
+            }
+            fn type_name(&self) -> &str {
+                todo!()
             }
         }
         impl TMValue for #type_name {
-            type Bytes = [u8; Self::len()];
-            fn from_bytes(bytes: Self::Bytes) -> Self {
-                Self {
-                    #(#struct_type_parsers),*
-                }
-            }
-            fn to_bytes(&self) -> Self::Bytes {
-                let mut bytes: Self::Bytes = [0u8; {Self::len()}];
-                #(#struct_byte_parsers)*
-                bytes
-            }
+            const BYTE_SIZE: usize = Self::get_pos(Self::SIZES.len());
         }
     }
 }

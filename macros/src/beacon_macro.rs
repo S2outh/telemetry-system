@@ -22,7 +22,7 @@ pub fn impl_macro(beacon_path: syn::Path, ast: syn::DeriveInput) -> TokenStream 
             var
         });
     
-    let attrs_metas = bd_enum.variants
+    let _attrs_metas = bd_enum.variants
         .iter()
         .map(|v| 
             v.attrs
@@ -46,7 +46,7 @@ pub fn impl_macro(beacon_path: syn::Path, ast: syn::DeriveInput) -> TokenStream 
         .map(|v| &v.ident )
         .enumerate()
         .map(|(i, v)| quote!{
-            #v(tm_value) => {
+            #beacon_definition_name::#v(tm_value) => {
                 let bytes = tm_value.to_bytes();
                 let pos = Self::get_pos(#i);
                 storage[pos..(pos+bytes.len())].copy_from_slice(&bytes);
@@ -60,7 +60,7 @@ pub fn impl_macro(beacon_path: syn::Path, ast: syn::DeriveInput) -> TokenStream 
         }
 
         impl #beacon_definition_name {
-            const SIZES: [usize; #enum_len] = [#(size_of::<<#enum_types as TMValue>::Bytes>()),*];
+            const SIZES: [usize; #enum_len] = [#(<#enum_types as TMValue>::BYTE_SIZE),*];
             const fn get_pos(index: usize) -> usize {
                 let mut len = 0;
                 let mut i = 0;
@@ -70,12 +70,12 @@ pub fn impl_macro(beacon_path: syn::Path, ast: syn::DeriveInput) -> TokenStream 
                 }
                 len
             }
-            const fn len() -> usize {
+            const fn size() -> usize {
                 Self::get_pos(Self::SIZES.len())
             }
         }
 
-        type #beacon_name = Beacon<#beacon_definition_name, {#beacon_definition_name::len()}>;
+        type #beacon_name = Beacon<#beacon_definition_name, {#beacon_definition_name::size()}>;
 
         impl BeaconDefinition for #beacon_definition_name {
             fn transfer_cell(&self, storage: &mut [u8]) {

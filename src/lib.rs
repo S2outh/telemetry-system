@@ -1,36 +1,22 @@
 #![no_std]
+#![allow(incomplete_features)]
+#![feature(generic_const_exprs)]
+#![feature(const_trait_impl)]
+
 mod telemetry_value;
 
-use core::marker::PhantomData;
-
-pub use macros::beacon;
+//pub use macros::beacon;
+pub use macros::tm_definition_macro_attribute;
 pub use macros::TMValue;
 
 pub use telemetry_value::TMValue;
+pub use telemetry_value::DynTMValue;
 
-pub trait BeaconDefinition {
-    fn transfer_cell(&self, storage: &mut [u8]);
+pub const trait DynTelemetryDefinition {
+    fn id(&self) -> u32;
+    fn address(&self) -> &str;
 }
-
-pub struct Beacon<DEF: BeaconDefinition, const N: usize> {
-    storage: [u8; N],
-    _def: PhantomData<DEF>,
+pub trait TelemetryDefinition: DynTelemetryDefinition {
+    type TMValueType: TMValue;
+    const BYTE_SIZE: usize = Self::TMValueType::BYTE_SIZE;
 }
-impl<DEF: BeaconDefinition, const N: usize> Beacon<DEF, N> {
-    pub fn new() -> Self {
-        Self {
-            storage: [0u8; N],
-            _def: PhantomData::<DEF>,
-        }
-    }
-    pub fn insert(&mut self, topic: DEF) {
-        topic.transfer_cell(&mut self.storage);
-    }
-    pub fn bytes(&self) -> &[u8] {
-        &self.storage
-    }
-    pub fn flush(&mut self) {
-        self.storage.fill(0);
-    }
-}
-
