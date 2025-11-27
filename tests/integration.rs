@@ -37,40 +37,60 @@ fn beacon_creation() {
     assert_eq!(TestBeacon::SIZES, sizes);
 }
 
-// #[test]
-// fn beacon_insertion() {
-//     let mut beacon = TestBeacon::new();
-// 
-//     let first_value = 1234;
-//     let second_value = TestValue { val: 3 };
-//     let third_value = TestVector { x: 3, y: 3.3, z: TestValue { val: 1 }};
-//     beacon.insert(TestBeaconDefinition::FirstTMValue(first_value));
-//     beacon.insert(TestBeaconDefinition::SecondTMValue(second_value));
-//     beacon.insert(TestBeaconDefinition::ThirdTMValue(third_value));
-//     
-//     assert_eq!(&beacon.bytes()[0..4], first_value.to_le_bytes());
-//     assert_eq!(&beacon.bytes()[4..8], second_value.val.to_le_bytes());
-//     assert_eq!(&beacon.bytes()[8..10], third_value.x.to_le_bytes());
-//     assert_eq!(&beacon.bytes()[10..14], third_value.y.to_le_bytes());
-//     assert_eq!(&beacon.bytes()[14..18], third_value.z.val.to_le_bytes());
-// }
+#[test]
+fn beacon_insertion() {
+    let mut beacon = TestBeacon::new();
 
-// #[test]
-// fn beacon_insertion_can() {
-//     let mut can_beacon = TestBeacon::new();
-//     let mut beacon = TestBeacon::new();
-// 
-//     let first_value = 1234;
-//     let second_value = TestValue { val: 3 };
-//     let third_value = TestVector { x: 3, y: 3.3, z: TestValue { val: 1 }};
-// 
-//     can_beacon.insert(TestBeaconDefinition::from_can_topic(12, first_value.to_bytes()));
-//     can_beacon.insert(TestBeaconDefinition::from_can_topic(1, first_value.to_bytes()));
-//     can_beacon.insert(TestBeaconDefinition::from_can_topic(3, first_value.to_bytes()));
-// 
-//     beacon.insert(TestBeaconDefinition::FirstTMValue(first_value));
-//     beacon.insert(TestBeaconDefinition::SecondTMValue(second_value));
-//     beacon.insert(TestBeaconDefinition::ThirdTMValue(third_value));
-// 
-//     assert_eq!(can_beacon.bytes(), beacon.bytes());
-// }
+    let first_value = 1234u32;
+    let second_value = TestValue { val: 3 };
+    let third_value = TestVector { x: 3, y: 3.3, z: TestValue { val: 1 }};
+    beacon.insert(&telemetry::FirstTMValue, &first_value).unwrap();
+    beacon.insert(&telemetry::SecondTMValue, &second_value).unwrap();
+    beacon.insert(&telemetry::some_other_mod::ThirdTMValue, &third_value).unwrap();
+    
+    assert_eq!(&beacon.bytes()[0..4], first_value.to_le_bytes());
+    assert_eq!(&beacon.bytes()[4..8], second_value.val.to_le_bytes());
+    assert_eq!(&beacon.bytes()[8..10], third_value.x.to_le_bytes());
+    assert_eq!(&beacon.bytes()[10..14], third_value.y.to_le_bytes());
+    assert_eq!(&beacon.bytes()[14..18], third_value.z.val.to_le_bytes());
+}
+
+#[test]
+fn beacon_insertion_id() {
+    let mut id_beacon = TestBeacon::new();
+    let mut beacon = TestBeacon::new();
+
+    let first_value = 1234u32;
+    let second_value = TestValue { val: 3 };
+    let third_value = TestVector { x: 3, y: 3.3, z: TestValue { val: 1 }};
+
+    id_beacon.insert(telemetry::from_id(12), &first_value).unwrap();
+    id_beacon.insert(telemetry::from_id(1), &second_value).unwrap();
+    id_beacon.insert(telemetry::from_id(3), &third_value).unwrap();
+
+    beacon.insert(&telemetry::FirstTMValue, &first_value).unwrap();
+    beacon.insert(&telemetry::SecondTMValue, &second_value).unwrap();
+    beacon.insert(&telemetry::some_other_mod::ThirdTMValue, &third_value).unwrap();
+
+    assert_eq!(id_beacon.bytes(), beacon.bytes());
+}
+
+#[test]
+fn beacon_insertion_address() {
+    let mut address_beacon = TestBeacon::new();
+    let mut beacon = TestBeacon::new();
+
+    let first_value = 1234u32;
+    let second_value = TestValue { val: 3 };
+    let third_value = TestVector { x: 3, y: 3.3, z: TestValue { val: 1 }};
+
+    address_beacon.insert(telemetry::from_address("telemetry.first_value"), &first_value).unwrap();
+    address_beacon.insert(telemetry::from_address("telemetry.second_tm_value"), &second_value).unwrap();
+    address_beacon.insert(telemetry::from_address("telemetry.some_other_mod.third_tm_value"), &third_value).unwrap();
+
+    beacon.insert(&telemetry::FirstTMValue, &first_value).unwrap();
+    beacon.insert(&telemetry::SecondTMValue, &second_value).unwrap();
+    beacon.insert(&telemetry::some_other_mod::ThirdTMValue, &third_value).unwrap();
+
+    assert_eq!(address_beacon.bytes(), beacon.bytes());
+}

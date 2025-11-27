@@ -28,7 +28,7 @@ fn generate_module_recursive(address: Vec<syn::Ident>, items: &Vec<Item>) -> (To
                         .skip(1)
                         .chain(once(ty))
                         .map(|i| i.to_token_stream())
-                        .intersperse("::".parse().unwrap())
+                        .intersperse(quote!(::))
                         .collect();
                     let tmty = attr_content.get(0)
                         .expect(&format!("{} attribute must contain at least a type and an id parameter", TM_VALUE_MACRO_NAME))
@@ -52,12 +52,14 @@ fn generate_module_recursive(address: Vec<syn::Ident>, items: &Vec<Item>) -> (To
                         .map(|m| if let syn::Expr::Lit(value) = &m.value { value } else { panic!("unexpected attribute value type") })
                         .map(|m| if let syn::Lit::Str(str) = &m.lit { str } else { panic!("address should be a string") })
                         .next().map(|str| str.value()).unwrap_or_else(|| ty.to_string().to_snake_case()));
-
                     (
                         quote!{
                             pub struct #ty;
+                            impl #ty {
+                                pub const ID: u32 = #id;
+                            }
                             impl const DynTelemetryDefinition for #ty {
-                                fn id(&self) -> u32 { #id }
+                                fn id(&self) -> u32 { Self::ID }
                                 fn address(&self) -> &str { #address }
                             }
                             impl TelemetryDefinition for #ty {
