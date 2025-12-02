@@ -112,7 +112,7 @@ pub fn impl_macro(ast: syn::Item) -> TokenStream {
 
     quote! {
         pub mod #root_mod_ident {
-            use telemetry_system::{TelemetryDefinition, DynTelemetryDefinition};
+            use tmtc_system::{TelemetryDefinition, DynTelemetryDefinition};
             pub const fn from_id(id: u32) -> &'static dyn DynTelemetryDefinition {
                 match id {
                     #id_getters

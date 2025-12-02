@@ -1,5 +1,5 @@
 #![feature(const_trait_impl)]
-use telemetry_system::*;
+use tmtc_system::*;
 
 #[derive(TMValue, Default, PartialEq, Debug, Clone, Copy)]
 pub struct TestValue {
